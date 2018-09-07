@@ -40,7 +40,6 @@
             <property name="receives_default">True</property>
             <property name="image">img_practice</property>
             <property name="image_position">top</property>
-            <property name="always_show_image">True</property>
           </object>
           <packing>
             <property name="left_attach">0</property>
@@ -55,7 +54,6 @@
             <property name="receives_default">True</property>
             <property name="image">img_search</property>
             <property name="image_position">top</property>
-            <property name="always_show_image">True</property>
           </object>
           <packing>
             <property name="left_attach">1</property>
@@ -220,6 +218,9 @@
     <property name="vexpand">False</property>
     <property name="title" translatable="yes">Prepositions by case</property>
     <property name="window_position">center</property>
+    <child>
+      <placeholder/>
+    </child>
     <child>
       <object class="GtkBox" id="prepositions.box_prepositions">
         <property name="visible">True</property>
