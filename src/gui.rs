@@ -26,7 +26,7 @@ use gtk::{
 use std::env::args;
 use std::cell::RefCell;
 use std::rc::Rc;
-use wiki_api;
+use crate::wiki_api;
 
 fn build_practice_window(builder: &gtk::Builder) {
     let window: Window = builder.get_object("practice_window").expect("Couldn't get window");

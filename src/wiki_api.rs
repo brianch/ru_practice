@@ -1,12 +1,3 @@
-extern crate curl;
-extern crate serde_json;
-extern crate serde;
-extern crate kuchiki;
-extern crate gtk;
-extern crate gio;
-extern crate std;
-
-use curl::easy::Easy;
 use kuchiki::traits::*;
 use std::error;
 use std::fmt;
@@ -16,7 +7,7 @@ pub enum WordNotFoundError {
     FromUtf8Error(std::string::FromUtf8Error),
     SerdeError(serde_json::Error),
     ParseIntError(std::num::ParseIntError),
-    CurlError(curl::Error),
+    ReqwestError(reqwest::Error),
 }
 
 #[derive(Debug)]
@@ -41,9 +32,9 @@ impl From<std::num::ParseIntError> for WordNotFoundError {
     }
 }
 
-impl From<curl::Error> for WordNotFoundError {
-    fn from(err: curl::Error) -> WordNotFoundError {
-        WordNotFoundError::CurlError(err)
+impl From<reqwest::Error> for WordNotFoundError {
+    fn from(err: reqwest::Error) -> WordNotFoundError {
+        WordNotFoundError::ReqwestError(err)
     }
 }
 
@@ -53,27 +44,19 @@ impl fmt::Display for WordNotFoundError {
             WordNotFoundError::FromUtf8Error(ref err) => write!(f, "FromUtf8Error error: {}", err),
             WordNotFoundError::SerdeError(ref err) =>  write!(f, "SerdeError error: {}", err),
             WordNotFoundError::ParseIntError(ref err) =>  write!(f, "ParseIntError error: {}", err),
-            WordNotFoundError::CurlError(ref err) =>  write!(f, "CurlError error: {}", err),
+            WordNotFoundError::ReqwestError(ref err) =>  write!(f, "ReqWestError error: {}", err),
         }
     }
 }
 
 impl error::Error for WordNotFoundError {
-    fn description(&self) -> &str {
-        match *self {
-            WordNotFoundError::FromUtf8Error(ref err) => err.description(),
-            WordNotFoundError::SerdeError(ref err) => err.description(),
-            WordNotFoundError::ParseIntError(ref err) => err.description(),
-            WordNotFoundError::CurlError(ref err) =>  err.description(),
-        }
-    }
 
-    fn cause(&self) -> Option<&error::Error> {
+    fn cause(&self) -> Option<&dyn error::Error> {
         match *self {
             WordNotFoundError::FromUtf8Error(ref err) => Some(err),
             WordNotFoundError::SerdeError(ref err) => Some(err),
             WordNotFoundError::ParseIntError(ref err) => Some(err),
-            WordNotFoundError::CurlError(ref err) => Some(err),
+            WordNotFoundError::ReqwestError(ref err) => Some(err),
         }
     }
 }
@@ -87,13 +70,7 @@ impl fmt::Display for WikiError {
 }
 
 impl error::Error for WikiError {
-    fn description(&self) -> &str {
-        match *self {
-            WikiError::WordNotFoundError(ref err) => err.description(),
-        }
-    }
-
-    fn cause(&self) -> Option<&error::Error> {
+    fn cause(&self) -> Option<&dyn error::Error> {
         match *self {
             WikiError::WordNotFoundError(ref err) => Some(err),
         }
@@ -156,23 +133,16 @@ const ACUSATIVE_STRING     : &str = "Acusative";
 const INSTRUMENTAL_STRING  : &str = "Instrumental";
 const PREPOSITIONAL_STRING : &str = "Prepositional";
 
-fn get_page_info(word: &str) -> Result<String, WordNotFoundError> {
-    let mut easy = Easy::new();
-    let mut buf = Vec::new();
+#[tokio::main]
+async fn get_page_info(word: &str) -> Result<String, WordNotFoundError> {
     let mut url = "https://ru.wiktionary.org/w/api.php?action=parse&redirects&format=json&prop=sections&page=".to_owned();
     url.push_str(word);
-    try!(easy.url(&url));
-    {
-        let mut transfer = easy.transfer();
-        try!(transfer.write_function(|data| {
-            buf.extend_from_slice(data);
-            Ok(data.len())
-        }));
-        try!(transfer.perform());
-    }
-    match String::from_utf8(buf) {
+
+    let resp = reqwest::get(&url)
+        .await?.text().await;
+    match resp {
         Ok(page_info) => Ok(page_info),
-        Err(err) => Err(err).map_err(WordNotFoundError::FromUtf8Error),
+        Err(err) => Err(err).map_err(WordNotFoundError::ReqwestError),
     }
 }
 
@@ -180,37 +150,27 @@ fn get_morphological_section_number(page_info: String) -> Result<u16,WordNotFoun
     let ret: ResponseWiki;
     let mut section_index = 0;
 
-    //ret = serde_json::from_str(&page_info).unwrap();
-    ret = try!(serde_json::from_str(&page_info));
+    ret = serde_json::from_str(&page_info)?;
     for section in ret.parse.sections {
         if section.line == "Морфологические и синтаксические свойства" {
-            //section_index = section.index.parse::<u16>().unwrap();
-            section_index = try!(section.index.parse::<u16>());
+            section_index = section.index.parse::<u16>()?;
             break;
         }
     }
     Ok(section_index)
 }
 
-fn get_morphological_section(word: String, index: u16) -> Result<String, WordNotFoundError> {
-    let mut easy = Easy::new();
-    let mut buf = Vec::new();
+#[tokio::main]
+async fn get_morphological_section(word: String, index: u16) -> Result<String, WordNotFoundError> {
     let mut url = "https://ru.wiktionary.org/w/api.php?action=parse&prop=text&redirects&format=json&formatversion=2&page=".to_owned();
     url.push_str(&word);
     url.push_str("&section=");
     url.push_str(&index.to_string());
 
-    try!(easy.url(&url));
-    {
-        let mut transfer = easy.transfer();
-        try!(transfer.write_function(|data| {
-            buf.extend_from_slice(data);
-            Ok(data.len())
-        }));
-        try!(transfer.perform());
-    }
-    let json_str = try!(String::from_utf8(buf));
-    let response: ResponseWiki = try!(serde_json::from_str(&json_str));
+    let resp = reqwest::get(&url)
+        .await?.text().await?;
+
+    let response: ResponseWiki = serde_json::from_str(&resp)?;
     Ok(response.parse.text)
 }
 
