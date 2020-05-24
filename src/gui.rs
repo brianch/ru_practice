@@ -227,7 +227,7 @@ fn build_search_window(builder: &gtk::Builder) {
 			}
 		};
         ref_treestore.borrow_mut().clear();
-        for i in 0..declensions.len() - 1 {
+        for i in 0..declensions.len() {
 			let case = declensions.get(i).unwrap();
 			ref_treestore.borrow_mut().
 					insert_with_values(None,
