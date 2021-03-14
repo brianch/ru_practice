@@ -1,6 +1,6 @@
 # ru_practice
 Tool to get declension tables for Russian nouns (and hopefuly some exercises in the future).
-![demo_res](https://user-images.githubusercontent.com/5335499/111081815-e63afc00-84e3-11eb-9695-e07884a95b8d.gif)
+![demo_res3](https://user-images.githubusercontent.com/5335499/111082665-50ee3680-84e8-11eb-9587-a02c01ab896e.gif)
 
 I started this project in the end of last year as a way to speed up my searches in wikitionary while also learning Rust (and GTK) along the way.
 
