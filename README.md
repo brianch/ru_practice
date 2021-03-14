@@ -9,6 +9,8 @@ I'm learning as I go, so the code is possibly very wrong in many many ways but i
 ### License
 The database (ru_practice.db) is a derivative of the file dict.opcorpora.xml from http://opencorpora.org, used under CC-BY-SA 3.0. "ru_practice.db" is licenced under CC-BY-SA 3.0.
 
+<br />
+
 The source code is licensed under the GPLv2 or later as below:
 
 This program is free software; you can redistribute it and/or
