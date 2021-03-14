@@ -16,6 +16,7 @@ macro_rules! clone {
     );
 }
 
+use gtk::RadioButton;
 use gio;
 use gtk;
 use gtk::prelude::*;
@@ -26,6 +27,8 @@ use gtk::{
 use std::env::args;
 use std::cell::RefCell;
 use std::rc::Rc;
+
+use crate::local_dec_tables;
 use crate::wiki_api;
 
 fn build_practice_window(builder: &gtk::Builder) {
@@ -171,14 +174,14 @@ fn build_search_window(builder: &gtk::Builder) {
     let box_prepositions: Box = builder.get_object("search.box_search").expect("Couldn't get treeView");
     let status_bar = Statusbar::new();
     box_prepositions.pack_end(&status_bar, false, false, 0);
-    status_bar.push(status_bar.get_context_id("search"), "the declension tables are retrieved from https://ru.wiktionary.org/");
+    status_bar.push(status_bar.get_context_id("search"), "This db (ru_practice.db) is a derivative of dict.opcorpora.xml from opencorpora.org, used under CC-BY-SA 3.0. \"ru_practice.db\" is licenced under CC-BY-SA 3.0");
 
     let entry_word: Entry = builder.get_object("search.entry_word").expect("Couldn't get entry word");
+    let radio_wiki: RadioButton = builder.get_object("search.rdo_local_db").expect("Couldn't get radio local db");
     let tree_view: TreeView = builder.get_object("search.treeview_declension").expect("Couldn't get treeView");
 
     let model_declension =
 			TreeStore::new(&[String::static_type(),String::static_type(),String::static_type()]);
-
 
     //let ref_entry: Rc<RefCell<gtk::Entry>> = Rc::new(RefCell::new(entry_word));
     tree_view.set_model(Some(&model_declension));
@@ -218,14 +221,29 @@ fn build_search_window(builder: &gtk::Builder) {
     let ref_treestore: Rc<RefCell<gtk::TreeStore>> = Rc::new(RefCell::new(model_declension_copy));
     let ref_entry: Rc<RefCell<gtk::Entry>> = Rc::new(RefCell::new(entry_copy));
 
+    radio_wiki.connect_clicked(clone!(status_bar, radio_wiki => move |_| {
+        if radio_wiki.get_active() {
+            status_bar.pop(status_bar.get_context_id("search"));
+            status_bar.push(status_bar.get_context_id("search"), "This db (ru_practice.db) is a derivative of dict.opcorpora.xml from opencorpora.org, used under CC-BY-SA 3.0. \"ru_practice.db\" is licenced under CC-BY-SA 3.0");
+        } else {
+            status_bar.pop(status_bar.get_context_id("search"));
+            status_bar.push(status_bar.get_context_id("search"), "the declension tables will be retrieved from https://ru.wiktionary.org/");
+        }
+    }));
     btn_search.connect_clicked(move |_| {
-        let declensions: Vec<Vec<String>> = match wiki_api::get_declension_table(&ref_entry.borrow().get_text().unwrap()) {
-			Ok(table) => table,
-			Err(err) => {
-				println!("Error: {}",err);
-				return;
-			}
-		};
+        let local_source = radio_wiki.get_active();
+        let declensions: Vec<Vec<String>>;
+        if local_source {
+            declensions = local_dec_tables::get_declension_table(&ref_entry.borrow().get_text().unwrap());
+        } else {
+            declensions = match wiki_api::get_declension_table(&ref_entry.borrow().get_text().unwrap()) {
+                Ok(table) => table,
+                Err(err) => {
+                    println!("Error: {}",err);
+                    return;
+                }
+            };
+        }
         ref_treestore.borrow_mut().clear();
         for i in 0..declensions.len() {
 			let case = declensions.get(i).unwrap();

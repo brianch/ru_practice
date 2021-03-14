@@ -7,6 +7,10 @@ I started this project in the end of last year as a way to speed up my searches 
 I'm learning as I go, so the code is possibly very wrong in many many ways but it's at least currently working (except the practice window, that hasn't been done yet), and that's basically why I put it here, as it may be useful for others to have a simple working example of the things I used (gtk-rs, calls to the wikipedia API, etc).
 
 ### License
+The database (ru_practice.db) is a derivative of the file dict.opcorpora.xml from http://opencorpora.org, used under CC-BY-SA 3.0. "ru_practice.db" is licenced under CC-BY-SA 3.0.
+
+The source code is licensed under the GPLv2 or later as below:
+
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
 as published by the Free Software Foundation; either version 2
